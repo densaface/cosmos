@@ -170,7 +170,7 @@ for iter in range(100000):
                     r_len = mag(r)
                     vect_cross = cross(parts_tors[kk][zz]['tangent'], r)
                     if r_len != 0.0:
-                        vect_cross.mag = mu0 * TORS.tors[kk].II * parts_tors[kk][zz]['len'] / 4 / pi / r_len / r_len / r_len
+                        vect_cross.mag = mu0 * TORS.tors[kk].II * parts_tors[kk][zz]['len'] / 4 / pi / r_len / r_len
                         parts_tors[jj][ii]['B'] += vect_cross
                         # if jj == 0 and ii == 0 and iter == 0 and zz % 4 == 0:
                         #     print(f'Bx+ {vect_cross.x}')
