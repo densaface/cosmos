@@ -232,14 +232,15 @@ for iter in range(100000):
     if iter % 10 == 0:
         print('V1 = %0.0f м/с, V2 = %0.0f м/с, dt=%f, distance=%0.0f, t=%f, частей=%d, масса=%d, радиус=%d, ток=%d' % (
             TORS.tors[0].velocity.z, TORS.tors[1].velocity.z, dt, distance, t, TORS.parts, TORS.tors[1].massa, param.Radius, TORS.tors[1].II))
-    # print(f'Суммарная проекция силы на ось Z для второго тора sum_f_z2 = {sum_f_z2}')
-    # time.sleep(1)
-    
+
     # суммируем силы от разных частей одного тора
     for jj in range(len(TORS.tors)):
         TORS.tors[jj].SUM_F = vector(0.0, 0.0, 0.0)
         for kk in range(len(TORS.tors[jj].part_f)):
             TORS.tors[jj].SUM_F += TORS.tors[jj].part_f[kk]
+
+    # print("Модель с торами: F={:.2e}, I={:.2e}, R={:.2e}, distance={:.2e}".format(
+    #     TORS.tors[0].SUM_F.z, param.I_current, param.Radius, distance))
 
     # считаем итоговые скорость и положение тела
     for jj in range(len(TORS.tors)):
@@ -252,4 +253,4 @@ for iter in range(100000):
     old_V = TORS.tors[0].velocity.z
 
     if iter % 10 == 0:
-        save_whole_model('/data_logs/tors_%d_%d_dt=%f.txt' % (TORS.parts, iter, dt))
+        save_whole_model('data_logs/tors_%d_%d_dt=%f.txt' % (TORS.parts, iter, dt))

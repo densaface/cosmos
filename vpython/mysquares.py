@@ -125,7 +125,7 @@ for iter in range(100000):
     rate(1)
 
     # меняем временной интервал с учетом близости торов, чтобы уменьшить накапливаемую ошибку
-    distance = SQUA.squar[0][0].pos.z - SQUA.squar[0][1].pos.z
+    distance = abs(SQUA.squar[0][0].pos.z - SQUA.squar[1][0].pos.z)
     # dt = distance * distance * 0.000003
     time0 = time.time()
 
@@ -137,13 +137,36 @@ for iter in range(100000):
     BB_max = mu0 * param.I_current / 4 / pi / real_dist
     # максимальная разность косинусов в центре стороны рамки, где максимальное магнитное поле
     cos_alph_max = 2 * squar_side1 / 2 / sqrt(squar_side1 * squar_side1 / 4 + real_dist * real_dist)
-    # минимальная разность косинусов в углу квадратной рамки, где магнитное поле будет минимальным
+    # минимальная по модулю разность косинусов в углу квадратной рамки, где магнитное поле будет минимальным
     cos_alph_min = squar_side1 / sqrt(squar_side1 * squar_side1 + real_dist * real_dist)
     # среднее магнитное поле от тока одной стороны рамки, рассчитанное в точках стороны другой рамки
     BB_average = BB_max * (cos_alph_max + cos_alph_min) / 2
 
-    # считаем силы от каждой части одного тора ко всем частям другого тора
+    # считаем силу по закону Ампера F = B I l
     FF = BB_average * param.I_current * squar_side1
+    # проекция силы на ось Z
+    FF_z = FF * distance / real_dist
+
+    # теперь считаем МП от противоположной стороны рамки
+    # (там ток течет в другую сторону, поэтому на ось z эта сила будет давать отрицательный вклад)
+    dy = param.Dif_radius + squar_side1  # разница по высоте между верхней стороной малой рамки и нижней стороной большой рамки
+    real_dist2 = sqrt(dy * dy + distance * distance)
+    BB_max2 = mu0 * param.I_current / 4 / pi / real_dist2
+    # максимальная по модулю разность косинусов в центре стороны рамки, где максимальное магнитное поле
+    cos_alph_max2 = 2 * squar_side1 / 2 / sqrt(squar_side1 * squar_side1 / 4 + real_dist2 * real_dist2)
+    # минимальная разность косинусов в углу квадратной рамки, где магнитное поле будет минимальным
+    cos_alph_min2 = squar_side1 / sqrt(squar_side1 * squar_side1 + real_dist2 * real_dist2)
+    # среднее магнитное поле от тока одной стороны рамки, рассчитанное в точках стороны другой рамки
+    BB_average2 = BB_max2 * (cos_alph_max2 + cos_alph_min2) / 2
+    # считаем (противо) силу по закону Ампера F = B I l
+    FF_opp = BB_average2 * param.I_current * squar_side1
+    # проекция силы на ось Z
+    FF_opp_z = FF_opp * distance / real_dist2
+    # результирующая проекций сил на ось Z
+    FF_res_z = 4 * (FF_z - FF_opp_z)
+    print("Модель с прямоугольными рамками: F={:.2e}, I={:.2e}, R={:.2e}, distance={:.2e}".format(
+        FF_res_z, param.I_current, param.Radius, distance))
+
 
     # print(f'Суммарная проекция силы на ось Z part_f = {TORS.part_f[0].z}')
     # e_k = TORS.tors[0].massa * TORS.tors[0].velocity.mag * TORS.tors[0].velocity.mag / 2
