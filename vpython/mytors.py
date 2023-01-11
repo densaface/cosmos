@@ -2,6 +2,8 @@ import time
 import json
 
 from vpython import *
+import model_parameters as param
+
 #Web VPython 3.2
 
 scene.center = vector(1,1,1)
@@ -25,26 +27,26 @@ def length_coor(pos1, pos2):
 class tors:
     def __init__(self, ):
         self.tors = []
-        self.parts = 200
-        self.diametr = 10000
+        self.parts = param.parts
 
-        tor1 = ring(pos=vector(0,0,0), axis=vector(0,0,1), radius=self.diametr, thickness=200, color=color.red)
-        tor2 = ring(pos=vector(0,0,-1000), axis=vector(0,0,1), radius=self.diametr - 1000, thickness=200, color=color.red)
+        tor1 = ring(pos=vector(0,0,0), axis=vector(0,0,1), radius=param.Radius, thickness=200, color=color.red)
+        tor2 = ring(pos=vector(0,0,-param.Distance), axis=vector(0,0,1), radius=param.Radius - param.Dif_radius,
+                    thickness=200, color=color.red)
 
         # строим 3 оси X,Y,Z
-        len_axel = 250
+        len_axel = param.Radius
         axel1 = arrow(pos=vector(0, 0, 0), axis=vector(len_axel, 0, 0), shaftwidth=10, color=color.blue)
         axel2 = arrow(pos=vector(0, 0, 0), axis=vector(0, len_axel, 0), shaftwidth=10, color=color.cyan)
         axel3 = arrow(pos=vector(0, 0, 0), axis=vector(0, 0, len_axel), shaftwidth=10, color=color.purple)
         # center_sphere = sphere(pos=tor1.pos, radius=10, color=color.orange)
 
-        tor1.massa = 1000
-        tor1.II = 100_000_000  # ток в торе
+        tor1.massa = param.Massa
+        tor1.II = param.I_current  # ток в торе
 
-        tor2.massa = 1000
-        tor2.II = 100_000_000  # ток в торе
-        tor1.velocity = vector(0, 0, 10000)
-        tor2.velocity = vector(0, 0,-10000)
+        tor2.massa = param.Massa
+        tor2.II = param.I_current  # ток в торе
+        tor1.velocity = param.Velocity[0]
+        tor2.velocity = param.Velocity[1]
         self.tors.append(tor1)
         self.tors.append(tor2)
 
@@ -101,8 +103,9 @@ probe_sphere = sphere(pos=vector(0, 0, 0), radius=20)
 pointer = arrow(pos=vector(0, 0, 0), axis=vector(0, 100, 0), shaftwidth=10, color=color.green)
 # start_radius_vector = arrow(pos=vector(0, 0, 0), axis=vector(0, 1, 0), shaftwidth=10, color=color.green)
 
-dt = 0.03
+dt = 0.00001
 t = 0.0
+old_V = param.Velocity[0].z
 
 for iter in range(100000):
     rate(1)
@@ -150,8 +153,8 @@ for iter in range(100000):
             pointer.rotate(2 * pi / TORS.parts, tor.axis)
 
             # sphere(pos=parts_tors[-1][-1]['pos'], radius=20)
-    if iter % 10 == 0:
-        print("Время инициализации модели: " + str(int(time.time() - time0)))
+    # if iter % 10 == 0:
+    #     print("Время построения касательных к разным частям торов: " + str(int(time.time() - time0)))
 
 
     # суммируем магнитное поле от каждой части одного тора ко всем частям другого тора
@@ -175,8 +178,8 @@ for iter in range(100000):
                         # if jj == 0 and ii == 0 and iter == 0 and zz % 4 == 0:
                         #     print(f'Bx+ {vect_cross.x}')
 
-    if iter % 10 == 0:
-        print("Время расчета Магнитного поля: " + str(int(time.time() - time1)))
+    # if iter % 10 == 0:
+    #     print("Время расчета Магнитного поля: " + str(int(time.time() - time1)))
     # считаем силы от каждой части одного тора ко всем частям другого тора
     for jj in range(len(TORS.tors)):
         TORS.tors[jj].part_f = []
@@ -228,7 +231,7 @@ for iter in range(100000):
     t += dt
     if iter % 10 == 0:
         print('V1 = %0.0f м/с, V2 = %0.0f м/с, dt=%f, distance=%0.0f, t=%f, частей=%d, масса=%d, радиус=%d, ток=%d' % (
-            TORS.tors[0].velocity.z, TORS.tors[1].velocity.z, dt, distance, t, TORS.parts, TORS.tors[1].massa, TORS.diametr, TORS.tors[1].II))
+            TORS.tors[0].velocity.z, TORS.tors[1].velocity.z, dt, distance, t, TORS.parts, TORS.tors[1].massa, param.Radius, TORS.tors[1].II))
     # print(f'Суммарная проекция силы на ось Z для второго тора sum_f_z2 = {sum_f_z2}')
     # time.sleep(1)
     
@@ -242,5 +245,11 @@ for iter in range(100000):
     for jj in range(len(TORS.tors)):
         TORS.tors[jj].pos += TORS.tors[jj].velocity * dt + dt * dt * (TORS.tors[jj].SUM_F)/2/TORS.tors[jj].massa
         TORS.tors[jj].velocity += dt * TORS.tors[jj].SUM_F / TORS.tors[jj].massa
+
+    # динамически увеличиваем dt, если скорость меняется меньше чем на 0.1 %
+    if abs(TORS.tors[0].velocity.z / old_V) < 1.01:
+        dt *= 1.5
+    old_V = TORS.tors[0].velocity.z
+
     if iter % 10 == 0:
-        save_whole_model('tors_%d_%d_dt=%f.txt' % (TORS.parts, iter, dt))
+        save_whole_model('/data_logs/tors_%d_%d_dt=%f.txt' % (TORS.parts, iter, dt))
